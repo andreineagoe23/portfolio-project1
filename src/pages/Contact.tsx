@@ -51,11 +51,32 @@ const Contact = () => {
         toast.success("Message sent successfully! I'll get back to you soon.");
         setFormData({ name: "", email: "", message: "" });
       } else {
-        // Fallback to mailto if no endpoint is configured
-        const subject = encodeURIComponent(`New message from ${formData.name}`);
-        const body = encodeURIComponent(`From: ${formData.name} <${formData.email}>\n\n${formData.message}`);
-        window.location.href = `mailto:mateigeorgeana2@gmail.com?subject=${subject}&body=${body}`;
-        toast.info("Opening your email client to send the message...");
+        // Fallback to FormSubmit (no backend, delivers to email)
+        // Note: The first submission will send a verification email to complete setup.
+        const formSubmitEndpoint = `https://formsubmit.co/ajax/${encodeURIComponent("mateigeorgeana2@gmail.com")}`;
+        const payload = {
+          name: formData.name,
+          email: formData.email,
+          message: formData.message,
+          _subject: `New message from ${formData.name}`,
+          _captcha: "false",
+        };
+
+        const response = await fetch(formSubmitEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to submit form");
+        }
+
+        toast.success("Message sent successfully! Please check your inbox.");
+        setFormData({ name: "", email: "", message: "" });
       }
     } catch (error) {
       if (error instanceof z.ZodError) {

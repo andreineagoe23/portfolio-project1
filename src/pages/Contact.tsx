@@ -6,7 +6,7 @@ import { Instagram, Linkedin, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+// Form submission is handled via Formspree (static-hosting friendly)
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100, "Name must be less than 100 characters"),
@@ -32,17 +32,31 @@ const Contact = () => {
       
       setIsSubmitting(true);
       
-      // Save to database
-      const { error } = await supabase
-        .from('contact_submissions')
-        .insert([formData]);
+      const formspreeEndpoint = import.meta.env.VITE_FORMSPREE_ENDPOINT as string | undefined;
       
-      if (error) {
-        throw error;
+      if (formspreeEndpoint) {
+        const response = await fetch(formspreeEndpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(formData),
+        });
+        
+        if (!response.ok) {
+          throw new Error("Failed to submit form");
+        }
+        
+        toast.success("Message sent successfully! I'll get back to you soon.");
+        setFormData({ name: "", email: "", message: "" });
+      } else {
+        // Fallback to mailto if no endpoint is configured
+        const subject = encodeURIComponent(`New message from ${formData.name}`);
+        const body = encodeURIComponent(`From: ${formData.name} <${formData.email}>\n\n${formData.message}`);
+        window.location.href = `mailto:mateigeorgeana2@gmail.com?subject=${subject}&body=${body}`;
+        toast.info("Opening your email client to send the message...");
       }
-      
-      toast.success("Message sent successfully! I'll get back to you soon.");
-      setFormData({ name: "", email: "", message: "" });
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);

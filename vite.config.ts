@@ -12,6 +12,11 @@ export default defineConfig(({ mode }) => ({
   plugins: [react()],
   // Use relative base so assets work on GitHub Pages (including project subpaths)
   base: "./",
+  build: {
+    // Output to docs/ so GitHub Pages can deploy from the main branch
+    outDir: "docs",
+    emptyOutDir: true,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
